@@ -1,0 +1,394 @@
+{{define "profile_editor"}}
+{{template "head" .}}
+{{with .Profile}}
+<div class="mx-auto" style="max-width:56rem">
+    <!-- Top bar -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <a href="/profiles" class="d-inline-flex align-items-center gap-1 small text-body-secondary text-decoration-none">
+            <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Back to Profiles
+        </a>
+        <div class="d-flex align-items-center gap-2">
+            {{if not $.IsNew}}
+            <button type="button" onclick="if(confirm('Delete this profile?')){fetch('/profiles/{{.ID}}',{method:'DELETE'}).then(function(r){if(r.ok){window.location='/profiles'}else{alert('Failed to delete profile.')}})}"
+                class="btn btn-outline-danger btn-sm">Delete</button>
+            {{end}}
+            <a href="/profiles" class="btn btn-outline-secondary btn-sm">Cancel</a>
+            <button type="submit" form="profile-form" class="btn btn-primary btn-sm">Save</button>
+        </div>
+    </div>
+
+    <form id="profile-form"
+        method="POST"
+        action="{{if $.IsNew}}/profiles{{else}}/profiles/{{.ID}}{{end}}"
+        enctype="multipart/form-data">
+
+        <input type="hidden" name="var_schema" id="var-schema-input" value="{{.VarSchema}}">
+        <input type="hidden" name="default_vars" id="default-vars-input" value="{{.DefaultVars}}">
+
+        <!-- Basic Information -->
+        <div class="card mb-4">
+            <div class="card-body">
+            <h2 class="h6 fw-semibold mb-3">Basic Information</h2>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold small">Name</label>
+                    <input type="text" name="name" value="{{.Name}}" required placeholder="e.g. Debian 12 Preseed" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold small">OS Family</label>
+                    <select name="os_family" id="os-family-select" class="form-select">
+                        <option value="custom" {{if eq .OSFamily "custom"}}selected{{end}}>Custom</option>
+                        <option value="debian" {{if eq .OSFamily "debian"}}selected{{end}}>Debian</option>
+                        <option value="ubuntu" {{if eq .OSFamily "ubuntu"}}selected{{end}}>Ubuntu</option>
+                        <option value="rhel" {{if eq .OSFamily "rhel"}}selected{{end}}>RHEL / CentOS / Fedora</option>
+                        <option value="suse" {{if eq .OSFamily "suse"}}selected{{end}}>SUSE / openSUSE</option>
+                        <option value="esxi" {{if eq .OSFamily "esxi"}}selected{{end}}>VMware ESXi</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold small">Description</label>
+                    <input type="text" name="description" value="{{.Description}}" placeholder="Optional description" class="form-control">
+                </div>
+            </div>
+            {{if .CatalogID}}
+            <div class="mt-3">
+                <span class="badge rounded-pill text-bg-info">
+                    <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                    Catalog: {{.CatalogID}}
+                </span>
+            </div>
+            {{end}}
+            </div>
+        </div>
+
+        <!-- Variables -->
+        <div class="card mb-4">
+            <div class="card-body">
+            <h2 class="h6 fw-semibold mb-3">Variables</h2>
+            <div id="vars-editor"></div>
+            </div>
+        </div>
+
+        <!-- Kernel Parameters -->
+        <div class="card mb-4">
+            <div class="card-body">
+            <h2 class="h6 fw-semibold mb-3">Kernel Parameters</h2>
+            <input type="text" name="kernel_params" value="{{.KernelParams}}" placeholder="e.g. auto=true preseed/url={{"{{"}}.ConfigURL{{"}}"}}" class="form-control font-monospace">
+            <span class="form-text">Template vars: {{"{{"}}.MAC{{"}}"}}, {{"{{"}}.Hostname{{"}}"}}, {{"{{"}}.IP{{"}}"}}, {{"{{"}}.ServerURL{{"}}"}}, {{"{{"}}.ConfigURL{{"}}"}}, {{"{{"}}.CallbackURL{{"}}"}}, {{"{{"}}.Vars.key{{"}}"}}</span>
+            </div>
+        </div>
+
+        <!-- Config Template -->
+        <div class="card mb-4">
+            <div class="card-body">
+            <h2 class="h6 fw-semibold mb-3">Config Template</h2>
+            <textarea name="config_template" rows="24" placeholder="Preseed, kickstart, autoinstall, etc." class="form-control font-monospace">{{.ConfigTemplate}}</textarea>
+            <span class="form-text">Template vars: {{"{{"}}.MAC{{"}}"}}, {{"{{"}}.Hostname{{"}}"}}, {{"{{"}}.IP{{"}}"}}, {{"{{"}}.ServerURL{{"}}"}}, {{"{{"}}.ConfigURL{{"}}"}}, {{"{{"}}.CallbackURL{{"}}"}}, {{"{{"}}.Vars.key{{"}}"}}</span>
+            </div>
+        </div>
+
+        <!-- Initrd Overlay -->
+        <div class="card mb-4">
+            <div class="card-body">
+            <h2 class="h6 fw-semibold mb-3">Initrd Overlay</h2>
+            <div class="small text-body-secondary mb-2">
+                Current: {{if .OverlayFile}}{{.OverlayFile}}{{else}}<span class="fst-italic">none</span>{{end}}
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <label class="btn btn-outline-secondary btn-sm">
+                    <span>Choose file...</span>
+                    <input type="file" name="overlay_file" class="d-none" onchange="this.previousElementSibling.textContent = this.files.length ? this.files[0].name : 'Choose file...'">
+                </label>
+                {{if .OverlayFile}}
+                <div class="form-check">
+                    <input type="checkbox" name="remove_overlay" value="true" class="form-check-input" id="remove-overlay">
+                    <label class="form-check-label small text-body-secondary" for="remove-overlay">Remove existing overlay</label>
+                </div>
+                {{end}}
+            </div>
+            <span class="form-text">Extra initrd cpio.gz loaded at boot (e.g. NIC drivers)</span>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+(function() {
+    var varSchemaInput = document.getElementById('var-schema-input');
+    var defaultVarsInput = document.getElementById('default-vars-input');
+    var container = document.getElementById('vars-editor');
+
+    var schema = [];
+    try { if (varSchemaInput.value) schema = JSON.parse(varSchemaInput.value); } catch(e) {}
+
+    var vars = {};
+    try { vars = JSON.parse(defaultVarsInput.value) || {}; } catch(e) {}
+
+    function syncVars() {
+        defaultVarsInput.value = JSON.stringify(vars);
+    }
+
+    var baseInput = 'form-control';
+
+    function renderSchemaMode() {
+        container.innerHTML = '';
+        var schemaKeys = {};
+
+        // Schema fields
+        var grid = document.createElement('div');
+        grid.className = 'row g-3 mb-3';
+
+        schema.forEach(function(def) {
+            schemaKeys[def.key] = true;
+            var wrapper = document.createElement('div');
+            wrapper.className = 'col-md-6';
+
+            var label = document.createElement('label');
+            label.className = 'form-label fw-semibold small';
+            label.textContent = def.label || def.key;
+            if (def.required) {
+                var star = document.createElement('span');
+                star.className = 'text-danger ms-1';
+                star.textContent = '*';
+                label.appendChild(star);
+            }
+            wrapper.appendChild(label);
+
+            var input;
+            var fieldType = def.type || 'string';
+
+            if (fieldType === 'select' && def.options && def.options.length > 0) {
+                input = document.createElement('select');
+                input.className = 'form-select';
+                def.options.forEach(function(opt) {
+                    var o = document.createElement('option');
+                    o.value = opt;
+                    o.textContent = opt;
+                    if ((vars[def.key] || def['default'] || '') === opt) o.selected = true;
+                    input.appendChild(o);
+                });
+            } else if (fieldType === 'text') {
+                input = document.createElement('textarea');
+                input.rows = 3;
+                input.className = baseInput;
+                input.value = vars[def.key] !== undefined ? vars[def.key] : (def['default'] || '');
+            } else if (fieldType === 'password') {
+                input = document.createElement('input');
+                input.type = 'password';
+                input.className = baseInput;
+                input.value = vars[def.key] !== undefined ? vars[def.key] : (def['default'] || '');
+            } else {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.className = baseInput;
+                input.value = vars[def.key] !== undefined ? vars[def.key] : (def['default'] || '');
+            }
+
+            if (def.placeholder) input.placeholder = def.placeholder;
+            input.dataset.key = def.key;
+            input.addEventListener('input', function() {
+                vars[this.dataset.key] = this.value;
+                syncVars();
+            });
+            input.addEventListener('change', function() {
+                vars[this.dataset.key] = this.value;
+                syncVars();
+            });
+            wrapper.appendChild(input);
+
+            if (def.description) {
+                var hint = document.createElement('span');
+                hint.className = 'form-text';
+                hint.textContent = def.description;
+                wrapper.appendChild(hint);
+            }
+
+            grid.appendChild(wrapper);
+        });
+
+        container.appendChild(grid);
+
+        // Additional variables (keys not in schema)
+        var extraKeys = [];
+        for (var k in vars) {
+            if (!schemaKeys[k]) extraKeys.push(k);
+        }
+
+        var extraSection = document.createElement('div');
+        extraSection.id = 'extra-vars-section';
+
+        var extraTitle = document.createElement('h3');
+        extraTitle.className = 'small fw-medium text-body-secondary mb-2 mt-2 border-top pt-3';
+        extraTitle.textContent = 'Additional Variables';
+        extraSection.appendChild(extraTitle);
+
+        var extraBody = document.createElement('div');
+        extraBody.id = 'extra-vars-body';
+
+        function addExtraRow(key, value) {
+            var row = document.createElement('div');
+            row.className = 'd-flex align-items-center gap-2 mb-2';
+
+            var ki = document.createElement('input');
+            ki.type = 'text';
+            ki.placeholder = 'key';
+            ki.value = key || '';
+            ki.className = baseInput + ' flex-shrink-0';
+            ki.style.width = '12rem';
+
+            var vi = document.createElement('input');
+            vi.type = 'text';
+            vi.placeholder = 'value';
+            vi.value = value || '';
+            vi.className = baseInput + ' flex-grow-1 min-w-0';
+
+            var rm = document.createElement('button');
+            rm.type = 'button';
+            rm.className = 'btn btn-sm btn-outline-secondary flex-shrink-0';
+            rm.innerHTML = '<svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+            rm.onclick = function() {
+                var oldKey = ki.value;
+                if (oldKey && vars[oldKey] !== undefined && !schemaKeys[oldKey]) {
+                    delete vars[oldKey];
+                    syncVars();
+                }
+                row.remove();
+            };
+
+            function syncRow() {
+                var newVars = {};
+                for (var sk in schemaKeys) {
+                    if (vars[sk] !== undefined) newVars[sk] = vars[sk];
+                }
+                extraBody.querySelectorAll('.kv-row').forEach(function(r) {
+                    var inputs = r.querySelectorAll('input');
+                    if (inputs.length >= 2 && inputs[0].value) {
+                        newVars[inputs[0].value] = inputs[1].value;
+                    }
+                });
+                vars = newVars;
+                syncVars();
+            }
+
+            row.classList.add('kv-row');
+            ki.addEventListener('change', syncRow);
+            vi.addEventListener('input', syncRow);
+
+            row.appendChild(ki);
+            row.appendChild(vi);
+            row.appendChild(rm);
+            extraBody.appendChild(row);
+        }
+
+        extraKeys.forEach(function(k) { addExtraRow(k, vars[k]); });
+
+        extraSection.appendChild(extraBody);
+
+        var addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'btn btn-link btn-sm text-decoration-none p-0 mt-1';
+        addBtn.textContent = '+ Add Variable';
+        addBtn.onclick = function() { addExtraRow('', ''); };
+        extraSection.appendChild(addBtn);
+
+        container.appendChild(extraSection);
+    }
+
+    function renderKVMode() {
+        container.innerHTML = '';
+
+        // Column headers
+        var header = document.createElement('div');
+        header.className = 'd-flex align-items-center gap-2 mb-2';
+        var hk = document.createElement('span');
+        hk.className = 'flex-shrink-0 small fw-semibold text-body-secondary text-uppercase';
+        hk.style.width = '12rem';
+        hk.textContent = 'Key';
+        var hv = document.createElement('span');
+        hv.className = 'flex-grow-1 min-w-0 small fw-semibold text-body-secondary text-uppercase';
+        hv.textContent = 'Value';
+        var hs = document.createElement('span');
+        hs.className = 'flex-shrink-0';
+        hs.style.width = '2rem';
+        header.appendChild(hk);
+        header.appendChild(hv);
+        header.appendChild(hs);
+        container.appendChild(header);
+
+        var body = document.createElement('div');
+        body.id = 'kv-vars-body';
+
+        function rebuildVars() {
+            vars = {};
+            body.querySelectorAll('.kv-row').forEach(function(r) {
+                var inputs = r.querySelectorAll('input');
+                if (inputs.length >= 2 && inputs[0].value) {
+                    vars[inputs[0].value] = inputs[1].value;
+                }
+            });
+            syncVars();
+        }
+
+        function addRow(key, value) {
+            var row = document.createElement('div');
+            row.className = 'kv-row d-flex align-items-center gap-2 mb-2';
+
+            var ki = document.createElement('input');
+            ki.type = 'text';
+            ki.placeholder = 'key';
+            ki.value = key || '';
+            ki.className = baseInput + ' flex-shrink-0 font-monospace';
+            ki.style.width = '12rem';
+
+            var vi = document.createElement('input');
+            vi.type = 'text';
+            vi.placeholder = 'value';
+            vi.value = value || '';
+            vi.className = baseInput + ' flex-grow-1 min-w-0';
+
+            var rm = document.createElement('button');
+            rm.type = 'button';
+            rm.className = 'btn btn-sm btn-outline-secondary flex-shrink-0';
+            rm.innerHTML = '<svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+            rm.onclick = function() {
+                row.remove();
+                rebuildVars();
+            };
+
+            ki.addEventListener('change', rebuildVars);
+            vi.addEventListener('input', rebuildVars);
+
+            row.appendChild(ki);
+            row.appendChild(vi);
+            row.appendChild(rm);
+            body.appendChild(row);
+        }
+
+        var keys = Object.keys(vars);
+        if (keys.length === 0) {
+            addRow('', '');
+        } else {
+            keys.forEach(function(k) { addRow(k, vars[k]); });
+        }
+
+        container.appendChild(body);
+
+        var addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'btn btn-link btn-sm text-decoration-none p-0 mt-2';
+        addBtn.textContent = '+ Add Variable';
+        addBtn.onclick = function() { addRow('', ''); };
+        container.appendChild(addBtn);
+    }
+
+    if (schema.length > 0) {
+        renderSchemaMode();
+    } else {
+        renderKVMode();
+    }
+})();
+</script>
+{{end}}
+{{template "foot" .}}
+{{end}}

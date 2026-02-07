@@ -1,0 +1,52 @@
+version: 2
+
+builds:
+  - main: ./cmd/duh
+    binary: duh
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  use: github-native
+
+dockers:
+  - image_templates:
+      - "ghcr.io/justinpopa/duh:{{ .Version }}-amd64"
+    use: buildx
+    dockerfile: release.Dockerfile
+    build_flag_templates:
+      - "--platform=linux/amd64"
+    goarch: amd64
+  - image_templates:
+      - "ghcr.io/justinpopa/duh:{{ .Version }}-arm64"
+    use: buildx
+    dockerfile: release.Dockerfile
+    build_flag_templates:
+      - "--platform=linux/arm64"
+    goarch: arm64
+
+docker_manifests:
+  - name_template: "ghcr.io/justinpopa/duh:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/justinpopa/duh:{{ .Version }}-amd64"
+      - "ghcr.io/justinpopa/duh:{{ .Version }}-arm64"
+  - name_template: "ghcr.io/justinpopa/duh:latest"
+    image_templates:
+      - "ghcr.io/justinpopa/duh:{{ .Version }}-amd64"
+      - "ghcr.io/justinpopa/duh:{{ .Version }}-arm64"

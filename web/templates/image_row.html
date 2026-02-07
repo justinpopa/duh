@@ -1,0 +1,36 @@
+{{define "image_row"}}
+{{with .Image}}
+{{if eq .Status "downloading"}}
+<tr id="image-{{.ID}}" hx-get="/images/{{.ID}}/row" hx-trigger="every 2s" hx-swap="outerHTML">
+{{else}}
+<tr id="image-{{.ID}}" data-image="{{jsonAttr .}}" onclick="onImageRowClick(event, this)" style="cursor:pointer">
+{{end}}
+    <td class="px-3 py-2 small text-body">
+        <span class="d-inline-flex align-items-center gap-2">
+            {{if .Icon}}<svg class="icon-md flex-shrink-0" viewBox="0 0 24 24" fill="{{.IconColor}}"><path d="{{.Icon}}"/></svg>{{end}}
+            {{.Name}}{{if .CatalogID}} <span class="badge rounded-pill text-bg-info" style="font-size:10px">Catalog</span>{{end}}
+        </span>
+    </td>
+    <td class="px-3 py-2"><span class="badge rounded-pill text-bg-secondary text-uppercase">{{.BootType}}</span></td>
+    <td class="px-3 py-2" style="width:120px">
+        {{if eq .Status "ready"}}<span class="badge rounded-pill text-bg-success text-uppercase">Ready</span>
+        {{else if eq .Status "downloading"}}
+        <span class="d-inline-flex align-items-center gap-1 text-secondary small">
+            <span class="spinner-border spinner-border-sm" role="status"></span> Pulling
+        </span>
+        {{else if eq .Status "error"}}
+        <span class="d-inline-flex align-items-center gap-1">
+            <span class="small text-danger">Error</span>
+            {{if .CatalogID}}
+            <button class="btn btn-outline-danger btn-sm py-0 px-1" title="Retry" aria-label="Retry download"
+                hx-post="/catalog/pull" hx-vals='{"catalog_id":"{{.CatalogID}}"}' hx-target="#image-{{.ID}}" hx-swap="outerHTML"
+                onclick="event.stopPropagation()">
+                <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+            {{end}}
+        </span>
+        {{end}}
+    </td>
+</tr>
+{{end}}
+{{end}}

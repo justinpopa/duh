@@ -1,0 +1,112 @@
+{{define "webhooks"}}
+{{template "head"}}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="page-title mb-0">Webhooks</h1>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#add-webhook-modal">New Webhook</button>
+</div>
+
+<div id="webhooks-list" class="d-flex flex-column gap-3">
+    {{if .Webhooks}}
+    {{range .Webhooks}}
+    {{template "webhook_row" (dict "Webhook" .)}}
+    {{end}}
+    {{else}}
+    <p id="webhooks-empty" class="small text-body-secondary text-center py-5">No webhooks configured — add one to get notified of system state changes.</p>
+    {{end}}
+</div>
+<script>
+document.getElementById('webhooks-list').addEventListener('htmx:afterSwap', function() {
+    var empty = document.getElementById('webhooks-empty');
+    if (empty) empty.remove();
+});
+</script>
+
+<!-- New Webhook Modal -->
+<div id="add-webhook-modal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New Webhook</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="webhook-form" hx-post="/webhooks" hx-target="#webhooks-list" hx-swap="afterbegin"
+                hx-on::after-request="if(event.detail.successful){this.reset();resetEventCheckboxes();bootstrap.Modal.getInstance(document.getElementById('add-webhook-modal')).hide()}">
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">URL</label>
+                    <input type="url" name="url" placeholder="https://hooks.slack.com/..." required class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Secret <span class="fw-normal text-body-tertiary">(optional)</span></label>
+                    <input type="text" name="secret" placeholder="HMAC-SHA256 signing secret" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small mb-2">Events</label>
+                    <input type="hidden" name="events" id="events-input" value="*">
+                    <div class="d-flex flex-wrap gap-2">
+                        <label class="chip border">
+                            <input type="checkbox" class="event-checkbox" value="*" checked onchange="updateEventsInput(this)"> <span>All events</span>
+                        </label>
+                        <label class="chip border">
+                            <input type="checkbox" class="event-checkbox" value="system.discovered" onchange="updateEventsInput(this)"> <span>discovered</span>
+                        </label>
+                        <label class="chip border">
+                            <input type="checkbox" class="event-checkbox" value="system.queued" onchange="updateEventsInput(this)"> <span>queued</span>
+                        </label>
+                        <label class="chip border">
+                            <input type="checkbox" class="event-checkbox" value="system.provisioning" onchange="updateEventsInput(this)"> <span>provisioning</span>
+                        </label>
+                        <label class="chip border">
+                            <input type="checkbox" class="event-checkbox" value="system.ready" onchange="updateEventsInput(this)"> <span>ready</span>
+                        </label>
+                        <label class="chip border">
+                            <input type="checkbox" class="event-checkbox" value="system.failed" onchange="updateEventsInput(this)"> <span>failed</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button data-bs-dismiss="modal" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Add</button>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateEventsInput(clicked) {
+    var boxes = document.querySelectorAll('.event-checkbox');
+    var allBox = boxes[0];
+    var specific = Array.from(boxes).slice(1);
+
+    // Clicked "All" → select all, clear specifics
+    if (clicked === allBox) {
+        allBox.checked = true;
+        specific.forEach(function(cb) { cb.checked = false; });
+        document.getElementById('events-input').value = '*';
+        return;
+    }
+
+    // Clicked a specific event → uncheck "All"
+    allBox.checked = false;
+
+    var selected = specific.filter(function(cb) { return cb.checked; });
+    if (selected.length === 0) {
+        // Nothing selected → fall back to "All"
+        allBox.checked = true;
+        document.getElementById('events-input').value = '*';
+    } else {
+        document.getElementById('events-input').value = selected.map(function(cb) { return cb.value; }).join(',');
+    }
+}
+
+function resetEventCheckboxes() {
+    var boxes = document.querySelectorAll('.event-checkbox');
+    boxes[0].checked = true;
+    Array.from(boxes).slice(1).forEach(function(cb) { cb.checked = false; });
+    document.getElementById('events-input').value = '*';
+}
+</script>
+{{template "foot"}}
+{{end}}

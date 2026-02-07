@@ -1,0 +1,53 @@
+{{define "login"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - duh</title>
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+    <link rel="stylesheet" href="/static/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <script>
+    (function() {
+        var t = localStorage.getItem('theme');
+        if (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+        }
+    })();
+    </script>
+</head>
+<body class="bg-body text-body min-vh-100 d-flex align-items-center justify-content-center">
+
+    <div class="w-100 px-3" style="max-width:24rem">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <!-- Logo + Title -->
+                <div class="d-flex align-items-center justify-content-center gap-2 mb-4">
+                    <img src="/static/logo.svg" alt="duh" class="icon-xl">
+                    <div>
+                        <span class="fs-5 fw-bold text-body">duh</span>
+                        <span class="d-block text-body-secondary" style="font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-top:-2px">Dogmatic Unattended Hydration</span>
+                    </div>
+                </div>
+
+                {{if eq .Error "invalid"}}
+                <div class="alert alert-danger d-flex align-items-start gap-2 py-2 px-3 small" role="alert">
+                    <svg class="icon-sm flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Invalid password. Please try again.
+                </div>
+                {{end}}
+
+                <form method="POST" action="/login">
+                    <input type="text" name="username" value="admin" autocomplete="username" aria-hidden="true" tabindex="-1" style="position:absolute;width:0;height:0;overflow:hidden;opacity:0">
+                    <label for="password" class="form-label fw-semibold small">Password</label>
+                    <input type="password" id="password" name="password" required autofocus autocomplete="current-password"
+                        class="form-control" placeholder="Enter your password">
+                    <button type="submit" class="btn btn-primary w-100 mt-3">Sign In</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
+{{end}}

@@ -1,0 +1,629 @@
+{{define "password_section"}}
+<div id="password-section">
+    {{if .Error}}
+    <div class="alert alert-danger d-flex align-items-start gap-2 py-2 px-3 small" role="alert">
+        <svg class="icon-sm flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        {{.Error}}
+    </div>
+    {{end}}
+    {{if .Success}}
+    <div class="alert alert-success d-flex align-items-start gap-2 py-2 px-3 small" role="alert">
+        <svg class="icon-sm flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        {{.Success}}
+    </div>
+    {{end}}
+
+    {{if not .HasPassword}}
+    <!-- No password set -->
+    <div class="alert alert-warning d-flex align-items-start gap-2" role="alert">
+        <svg class="icon-md flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+        <div>
+            <p class="small fw-medium mb-0">No password set</p>
+            <p class="small mb-0 mt-1">All management endpoints are currently unprotected. Set a password to require authentication.</p>
+        </div>
+    </div>
+    <form method="POST" action="/auth/set-password" class="d-flex flex-column gap-3">
+        <input type="text" name="username" value="admin" autocomplete="username" aria-hidden="true" tabindex="-1" style="position:absolute;width:0;height:0;overflow:hidden;opacity:0">
+        <div>
+            <label for="password" class="form-label fw-semibold small">Password</label>
+            <input type="password" id="password" name="password" required autocomplete="new-password" class="form-control" style="max-width:24rem">
+        </div>
+        <div>
+            <label for="confirm" class="form-label fw-semibold small">Confirm Password</label>
+            <input type="password" id="confirm" name="confirm" required autocomplete="new-password" class="form-control" style="max-width:24rem">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" style="width:fit-content">Set Password</button>
+    </form>
+    {{else}}
+    <!-- Password is set -->
+    <div class="alert alert-success d-flex align-items-start gap-2" role="alert">
+        <svg class="icon-md flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div>
+            <p class="small fw-medium mb-0">Authentication enabled</p>
+            <p class="small mb-0 mt-1">A password is set. All management endpoints require login.</p>
+        </div>
+    </div>
+
+    <!-- Change password -->
+    <div class="mb-4">
+        <h3 class="small fw-semibold mb-3">Change Password</h3>
+        <form method="POST" action="/auth/change-password" class="d-flex flex-column gap-3">
+            <input type="text" name="username" value="admin" autocomplete="username" aria-hidden="true" tabindex="-1" style="position:absolute;width:0;height:0;overflow:hidden;opacity:0">
+            <div>
+                <label for="current" class="form-label fw-semibold small">Current Password</label>
+                <input type="password" id="current" name="current" required autocomplete="current-password" class="form-control" style="max-width:24rem">
+            </div>
+            <div>
+                <label for="new-password" class="form-label fw-semibold small">New Password</label>
+                <input type="password" id="new-password" name="password" required autocomplete="new-password" class="form-control" style="max-width:24rem">
+            </div>
+            <div>
+                <label for="new-confirm" class="form-label fw-semibold small">Confirm New Password</label>
+                <input type="password" id="new-confirm" name="confirm" required autocomplete="new-password" class="form-control" style="max-width:24rem">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="width:fit-content">Change Password</button>
+        </form>
+    </div>
+
+    <!-- Remove password -->
+    <div>
+        <h3 class="small fw-semibold mb-3">Remove Password</h3>
+        <p class="small text-body-secondary mb-3">This will disable authentication entirely. All management endpoints will become publicly accessible.</p>
+        <form method="POST" action="/auth/remove-password" onsubmit="return confirm('Are you sure you want to remove the password? This will disable authentication.')" class="d-flex align-items-center gap-3">
+            <input type="password" name="current" required placeholder="Current password" autocomplete="current-password" class="form-control" style="max-width:24rem">
+            <button type="submit" class="btn btn-danger btn-sm text-nowrap">Remove Password</button>
+        </form>
+    </div>
+    {{end}}
+</div>
+{{end}}
+
+{{define "setup"}}
+{{template "head"}}
+<h1 class="page-title mb-3">Setup</h1>
+
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active small" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-panel" type="button" role="tab">Settings</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link small" id="network-tab" data-bs-toggle="tab" data-bs-target="#network-panel" type="button" role="tab">Network</button>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+<!-- Settings Tab -->
+<div class="tab-pane fade show active" id="settings-panel" role="tabpanel">
+
+<!-- Authentication -->
+<div class="card mb-4">
+    <div class="card-body">
+    <h2 class="h6 fw-semibold mb-3">Authentication</h2>
+    {{template "password_section" .}}
+    </div>
+</div>
+
+<!-- Provisioning Settings -->
+{{template "confirm_global" .}}
+
+</div>
+
+<!-- Network Tab -->
+<div class="tab-pane fade" id="network-panel" role="tabpanel">
+
+<!-- How It Works -->
+<div class="card mb-4">
+    <div class="card-body">
+    <h2 class="h6 fw-semibold mb-3">How It Works</h2>
+    <p class="small text-body-secondary mb-4">
+        duh uses a two-stage boot chain: the client's firmware downloads a small iPXE binary, then iPXE takes over and fetches everything else (boot script, kernel, initrd) over HTTP. There are two ways the firmware can get that initial iPXE binary.
+    </p>
+
+    <div class="row g-3">
+        <!-- PXE Boot -->
+        <div class="col-md-6">
+            <div class="border rounded p-3">
+                <h3 class="small fw-semibold mb-2 d-flex align-items-center gap-2">
+                    <span class="badge text-bg-primary rounded" style="width:1.25rem;height:1.25rem;font-size:0.7rem;display:inline-flex;align-items:center;justify-content:center">1</span>
+                    PXE Boot <span class="small fw-normal text-body-secondary">(TFTP + HTTP)</span>
+                </h3>
+                <ol class="small text-body-secondary ps-3 mb-0">
+                    <li class="mb-1">Client PXE firmware sends DHCP DISCOVER</li>
+                    <li class="mb-1">DHCP server (or proxy DHCP) responds with TFTP server IP + boot filename</li>
+                    <li class="mb-1">Client downloads iPXE binary via TFTP (<code class="bg-body-secondary px-1 rounded">ipxe.efi</code> / <code class="bg-body-secondary px-1 rounded">undionly.kpxe</code> / <code class="bg-body-secondary px-1 rounded">ipxe-arm64.efi</code>)</li>
+                    <li class="mb-1">iPXE chains to <code class="bg-body-secondary px-1 rounded">{{.ServerURL}}/boot.ipxe</code></li>
+                    <li>All subsequent downloads go over HTTP</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- UEFI HTTP Boot -->
+        <div class="col-md-6">
+            <div class="border rounded p-3">
+                <h3 class="small fw-semibold mb-2 d-flex align-items-center gap-2">
+                    <span class="badge rounded" style="width:1.25rem;height:1.25rem;font-size:0.7rem;display:inline-flex;align-items:center;justify-content:center;background:#6f42c1;color:#fff">2</span>
+                    UEFI HTTP Boot <span class="small fw-normal text-body-secondary">(HTTP only)</span>
+                </h3>
+                <ol class="small text-body-secondary ps-3 mb-0">
+                    <li class="mb-1">Client UEFI firmware sends DHCP DISCOVER with vendor class <code class="bg-body-secondary px-1 rounded">HTTPClient</code></li>
+                    <li class="mb-1">DHCP responds with boot file URL: <code class="bg-body-secondary px-1 rounded">http://{{.ServerIP}}:{{.HTTPPort}}/ipxe.efi</code></li>
+                    <li class="mb-1">Firmware downloads iPXE directly over HTTP &mdash; no TFTP</li>
+                    <li>iPXE chains to <code class="bg-body-secondary px-1 rounded">{{.ServerURL}}/boot.ipxe</code></li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <p class="small text-body-secondary mt-3 mb-0">
+        duh serves iPXE binaries on both TFTP (<code class="bg-body-secondary px-1 rounded">:{{.TFTPPort}}</code>) and HTTP (<code class="bg-body-secondary px-1 rounded">:{{.HTTPPort}}</code>), so both paths work out of the box.
+    </p>
+    </div>
+</div>
+
+<!-- Section 2: Proxy DHCP -->
+<div class="card mb-4">
+    <div class="card-body">
+    <h2 class="h6 fw-semibold mb-3">Proxy DHCP</h2>
+
+    {{if .ProxyDHCP}}
+    <div class="alert alert-success d-flex align-items-start gap-2" role="alert">
+        <svg class="icon-md flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div>
+            <p class="small fw-medium mb-0">Proxy DHCP is active</p>
+            <p class="small mb-0 mt-1">Clients on the same subnet need no DHCP changes. For clients on other subnets, configure DHCP options or a relay below.</p>
+        </div>
+    </div>
+    {{else}}
+    <div class="alert alert-secondary d-flex align-items-start gap-2" role="alert">
+        <svg class="icon-md flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div>
+            <p class="small fw-medium mb-0">Proxy DHCP is not enabled</p>
+            <p class="small mb-0 mt-1">Enable with <code class="bg-body-secondary px-1 rounded">--proxy-dhcp</code> flag or <code class="bg-body-secondary px-1 rounded">DUH_PROXY_DHCP=1</code> environment variable. When enabled, clients on the same subnet won't need any DHCP server changes.</p>
+        </div>
+    </div>
+    {{end}}
+
+    <div class="small text-body-secondary d-flex flex-column gap-2">
+        <p class="mb-0"><strong class="text-body">What it is:</strong> A second DHCP responder on the network that <em>only</em> provides boot info (next-server, filename) &mdash; it never assigns IP addresses.</p>
+        <p class="mb-0"><strong class="text-body">How it works:</strong> Your existing DHCP server gives the client an IP address. Proxy DHCP gives it the boot file. The PXE firmware combines both responses.</p>
+        <p class="mb-0"><strong class="text-body">Limitation:</strong> Must be on the <strong>same L2 broadcast domain</strong> (same VLAN/subnet) as the booting clients. Broadcasts don't cross routers unless you add a DHCP relay / IP helper pointing to the duh server.</p>
+    </div>
+    </div>
+</div>
+
+<!-- Section 3: DHCP Server Configuration -->
+<div class="card mb-4">
+    <div class="card-body">
+    <h2 class="h6 fw-semibold mb-3">DHCP Server Configuration</h2>
+    {{if .ProxyDHCP}}
+    <p class="small text-body-secondary mb-4">
+        Proxy DHCP handles clients on the local subnet automatically. For clients on <strong>other subnets</strong> that can't hear proxy DHCP broadcasts, configure those subnets' DHCP server with the boot options below.
+    </p>
+    {{else}}
+    <p class="small text-body-secondary mb-4">
+        Your DHCP server needs to tell booting clients where to find the boot files. Configure the options below on every subnet where clients will PXE boot.
+    </p>
+    {{end}}
+
+    <!-- PXE Boot tab / HTTP Boot tab -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active small" id="pxe-tab" data-bs-toggle="tab" data-bs-target="#pxe-panel" type="button" role="tab">PXE Boot (TFTP)</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link small" id="http-tab" data-bs-toggle="tab" data-bs-target="#http-panel" type="button" role="tab">UEFI HTTP Boot</button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- PXE Boot Panel -->
+        <div class="tab-pane fade show active" id="pxe-panel" role="tabpanel">
+            <p class="small text-body-secondary mb-3">
+                Configure <strong>next-server</strong> (option 66) and <strong>filename</strong> (option 67) to point clients at duh's TFTP server. Architecture-specific filenames select the right iPXE binary.
+            </p>
+            <p class="small text-body-secondary mb-4">
+                UEFI x86_64: <code class="bg-body-secondary px-1 rounded">ipxe.efi</code> &middot;
+                UEFI ARM64: <code class="bg-body-secondary px-1 rounded">ipxe-arm64.efi</code> &middot;
+                Legacy BIOS: <code class="bg-body-secondary px-1 rounded">undionly.kpxe</code>
+            </p>
+
+            <div class="accordion" id="pxe-accordion">
+                <!-- ISC DHCP -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed small" type="button" data-bs-toggle="collapse" data-bs-target="#pxe-isc">ISC DHCP (dhcpd.conf)</button></h2>
+                    <div id="pxe-isc" class="accordion-collapse collapse" data-bs-parent="#pxe-accordion">
+                        <div class="accordion-body p-0">
+                            <pre class="bg-body-secondary rounded-0 p-3 mb-0 small font-monospace overflow-auto"><code># /etc/dhcp/dhcpd.conf
+next-server {{.ServerIP}};
+
+# UEFI x86_64 clients
+if option architecture-type = 00:07 or option architecture-type = 00:09 {
+    filename "ipxe.efi";
+}
+# UEFI ARM64 clients
+elsif option architecture-type = 00:0b {
+    filename "ipxe-arm64.efi";
+}
+# Legacy BIOS clients
+else {
+    filename "undionly.kpxe";
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- dnsmasq -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed small" type="button" data-bs-toggle="collapse" data-bs-target="#pxe-dnsmasq">dnsmasq</button></h2>
+                    <div id="pxe-dnsmasq" class="accordion-collapse collapse" data-bs-parent="#pxe-accordion">
+                        <div class="accordion-body p-0">
+                            <pre class="bg-body-secondary rounded-0 p-3 mb-0 small font-monospace overflow-auto"><code># /etc/dnsmasq.conf
+dhcp-match=set:efi-x64,option:client-arch,7
+dhcp-match=set:efi-x64,option:client-arch,9
+dhcp-match=set:efi-arm64,option:client-arch,11
+dhcp-match=set:bios,option:client-arch,0
+
+dhcp-boot=tag:efi-x64,ipxe.efi,{{.ServerIP}},{{.ServerIP}}
+dhcp-boot=tag:efi-arm64,ipxe-arm64.efi,{{.ServerIP}},{{.ServerIP}}
+dhcp-boot=tag:bios,undionly.kpxe,{{.ServerIP}},{{.ServerIP}}</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kea -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed small" type="button" data-bs-toggle="collapse" data-bs-target="#pxe-kea">ISC Kea</button></h2>
+                    <div id="pxe-kea" class="accordion-collapse collapse" data-bs-parent="#pxe-accordion">
+                        <div class="accordion-body p-0">
+                            <pre class="bg-body-secondary rounded-0 p-3 mb-0 small font-monospace overflow-auto"><code>// kea-dhcp4.conf — inside "Dhcp4" → "subnet4" → []
+{
+    "next-server": "{{.ServerIP}}",
+    "boot-file-name": "ipxe.efi",
+    "option-data": [
+        {
+            "name": "tftp-server-name",
+            "data": "{{.ServerIP}}"
+        }
+    ],
+    "client-classes": [
+        {
+            "name": "efi-x64",
+            "test": "option[93].hex == 0x0007 or option[93].hex == 0x0009",
+            "boot-file-name": "ipxe.efi"
+        },
+        {
+            "name": "efi-arm64",
+            "test": "option[93].hex == 0x000b",
+            "boot-file-name": "ipxe-arm64.efi"
+        },
+        {
+            "name": "bios",
+            "test": "option[93].hex == 0x0000",
+            "boot-file-name": "undionly.kpxe"
+        }
+    ]
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MikroTik -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed small" type="button" data-bs-toggle="collapse" data-bs-target="#pxe-mikrotik">MikroTik RouterOS</button></h2>
+                    <div id="pxe-mikrotik" class="accordion-collapse collapse" data-bs-parent="#pxe-accordion">
+                        <div class="accordion-body p-0">
+                            <pre class="bg-body-secondary rounded-0 p-3 mb-0 small font-monospace overflow-auto"><code># RouterOS terminal
+/ip dhcp-server network set [find] next-server={{.ServerIP}} boot-file-name=ipxe.efi
+
+# For architecture-specific boot files, use DHCP options:
+/ip dhcp-server option
+add name="tftp-server" code=66 value="'{{.ServerIP}}'"
+add name="boot-file-efi" code=67 value="'ipxe.efi'"
+add name="boot-file-bios" code=67 value="'undionly.kpxe'"</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- UniFi -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed small" type="button" data-bs-toggle="collapse" data-bs-target="#pxe-unifi">UniFi</button></h2>
+                    <div id="pxe-unifi" class="accordion-collapse collapse" data-bs-parent="#pxe-accordion">
+                        <div class="accordion-body">
+                            <p class="small text-body-secondary mb-2">In the UniFi Network app: <strong>Settings &rarr; Networks &rarr;</strong> select your network <strong>&rarr; DHCP &rarr; Network Boot</strong>.</p>
+                            <div class="bg-body-secondary rounded p-3 small mb-3">
+                                <div class="mb-2"><span class="fw-semibold text-body">Enable</span>: Network Boot</div>
+                                <div class="mb-2"><span class="fw-semibold text-body">TFTP Server</span>: <code>{{.ServerIP}}</code></div>
+                                <div><span class="fw-semibold text-body">Boot File Name</span>: <code>ipxe.efi</code></div>
+                            </div>
+                            <div class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-0" role="alert">
+                                <svg class="icon-sm flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                                <span class="small">UniFi can only set a <strong>single</strong> boot filename &mdash; it can't vary by client architecture. This works for UEFI x86_64 only. For mixed architectures (ARM64, legacy BIOS), use <strong>proxy DHCP</strong> instead.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HTTP Boot Panel -->
+        <div class="tab-pane fade" id="http-panel" role="tabpanel">
+            <p class="small text-body-secondary mb-3">
+                UEFI HTTP Boot uses DHCP option 60 (<code class="bg-body-secondary px-1 rounded">HTTPClient</code>) to detect capable firmware, then responds with option 67 containing a full URL instead of a filename. No TFTP involved.
+            </p>
+            <p class="small text-warning mb-4">
+                Not all firmware supports HTTP Boot. PXE boot (TFTP) is more universally compatible.
+            </p>
+
+            <div class="accordion" id="http-accordion">
+                <!-- ISC DHCP HTTP -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed small" type="button" data-bs-toggle="collapse" data-bs-target="#http-isc">ISC DHCP (dhcpd.conf)</button></h2>
+                    <div id="http-isc" class="accordion-collapse collapse" data-bs-parent="#http-accordion">
+                        <div class="accordion-body p-0">
+                            <pre class="bg-body-secondary rounded-0 p-3 mb-0 small font-monospace overflow-auto"><code># /etc/dhcp/dhcpd.conf — HTTP Boot
+class "httpclients" {
+    match if substring (option vendor-class-identifier, 0, 10) = "HTTPClient";
+    option bootfile-name "http://{{.ServerIP}}:{{.HTTPPort}}/ipxe.efi";
+
+    # ARM64 variant
+    if option architecture-type = 00:0b {
+        option bootfile-name "http://{{.ServerIP}}:{{.HTTPPort}}/ipxe-arm64.efi";
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- dnsmasq HTTP -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed small" type="button" data-bs-toggle="collapse" data-bs-target="#http-dnsmasq">dnsmasq</button></h2>
+                    <div id="http-dnsmasq" class="accordion-collapse collapse" data-bs-parent="#http-accordion">
+                        <div class="accordion-body p-0">
+                            <pre class="bg-body-secondary rounded-0 p-3 mb-0 small font-monospace overflow-auto"><code># /etc/dnsmasq.conf — HTTP Boot
+dhcp-vendorclass=set:httpboot,HTTPClient
+dhcp-option-force=tag:httpboot,60,HTTPClient
+
+# x86_64 UEFI HTTP clients
+dhcp-match=set:httpboot-x64,option:client-arch,16
+dhcp-boot=tag:httpboot-x64,http://{{.ServerIP}}:{{.HTTPPort}}/ipxe.efi
+
+# ARM64 UEFI HTTP clients
+dhcp-match=set:httpboot-arm64,option:client-arch,19
+dhcp-boot=tag:httpboot-arm64,http://{{.ServerIP}}:{{.HTTPPort}}/ipxe-arm64.efi</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kea HTTP -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed small" type="button" data-bs-toggle="collapse" data-bs-target="#http-kea">ISC Kea</button></h2>
+                    <div id="http-kea" class="accordion-collapse collapse" data-bs-parent="#http-accordion">
+                        <div class="accordion-body p-0">
+                            <pre class="bg-body-secondary rounded-0 p-3 mb-0 small font-monospace overflow-auto"><code>// kea-dhcp4.conf — HTTP Boot client classes
+"client-classes": [
+    {
+        "name": "httpboot-x64",
+        "test": "substring(option[60].hex, 0, 10) == 'HTTPClient' and option[93].hex == 0x0010",
+        "boot-file-name": "http://{{.ServerIP}}:{{.HTTPPort}}/ipxe.efi"
+    },
+    {
+        "name": "httpboot-arm64",
+        "test": "substring(option[60].hex, 0, 10) == 'HTTPClient' and option[93].hex == 0x0013",
+        "boot-file-name": "http://{{.ServerIP}}:{{.HTTPPort}}/ipxe-arm64.efi"
+    }
+]</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+
+<!-- Section 4: DHCP Relay / IP Helper -->
+<div class="card mb-4">
+    <div class="card-body">
+    <h2 class="h6 fw-semibold mb-3">DHCP Relay / IP Helper</h2>
+    <p class="small text-body-secondary mb-2">
+        If duh is on a <strong>different subnet</strong> from the booting clients, DHCP broadcasts won't reach it. You have two options:
+    </p>
+    <ol class="small text-body-secondary mb-4 ps-3">
+        <li class="mb-1"><strong>Configure DHCP options</strong> on the remote subnet's DHCP server (see above)</li>
+        <li><strong>Add a DHCP relay / IP helper</strong> on the router so proxy DHCP broadcasts reach duh</li>
+    </ol>
+    <p class="small text-body-secondary mb-4">
+        Option 2 is only useful if proxy DHCP is enabled. The relay forwards DHCP broadcasts from the remote subnet to duh's IP, allowing proxy DHCP to respond across L2 boundaries.
+    </p>
+
+    <div class="accordion" id="relay-accordion">
+        <!-- Cisco IOS -->
+        <div class="accordion-item">
+            <h2 class="accordion-header"><button class="accordion-button collapsed small" type="button" data-bs-toggle="collapse" data-bs-target="#relay-cisco">Cisco IOS</button></h2>
+            <div id="relay-cisco" class="accordion-collapse collapse" data-bs-parent="#relay-accordion">
+                <div class="accordion-body">
+                    <pre class="bg-body-secondary rounded p-3 mb-2 small font-monospace overflow-auto"><code>! On the interface facing the remote subnet
+interface Vlan10
+  ip helper-address {{.ServerIP}}</code></pre>
+                    <p class="small text-body-secondary mb-0">This forwards DHCP (and other UDP broadcast) traffic to duh. Add one <code class="bg-body-secondary px-1 rounded">ip helper-address</code> per relay target.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MikroTik -->
+        <div class="accordion-item">
+            <h2 class="accordion-header"><button class="accordion-button collapsed small" type="button" data-bs-toggle="collapse" data-bs-target="#relay-mikrotik">MikroTik RouterOS</button></h2>
+            <div id="relay-mikrotik" class="accordion-collapse collapse" data-bs-parent="#relay-accordion">
+                <div class="accordion-body p-0">
+                    <pre class="bg-body-secondary rounded-0 p-3 mb-0 small font-monospace overflow-auto"><code># Add DHCP relay on the interface facing the remote subnet
+/ip dhcp-relay
+add name=pxe-relay interface=vlan10 \
+    dhcp-server={{.ServerIP}} local-address=10.0.10.1 disabled=no</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- UniFi -->
+        <div class="accordion-item">
+            <h2 class="accordion-header"><button class="accordion-button collapsed small" type="button" data-bs-toggle="collapse" data-bs-target="#relay-unifi">UniFi</button></h2>
+            <div id="relay-unifi" class="accordion-collapse collapse" data-bs-parent="#relay-accordion">
+                <div class="accordion-body">
+                    <p class="small text-body-secondary mb-2">In the UniFi Network app: <strong>Settings &rarr; Networks &rarr;</strong> select the remote network <strong>&rarr; DHCP</strong>. Change <strong>DHCP Mode</strong> from <em>DHCP Server</em> to <em>DHCP Relay</em> and enter the duh server IP.</p>
+                    <div class="bg-body-secondary rounded p-3 small mb-3">
+                        <div class="mb-2"><span class="fw-semibold text-body">DHCP Mode</span>: DHCP Relay</div>
+                        <div><span class="fw-semibold text-body">DHCP Relay Server</span>: <code>{{.ServerIP}}</code></div>
+                    </div>
+                    <p class="small text-body-secondary mb-0">This forwards all DHCP traffic from that network to duh. Note that duh (or another DHCP server) must assign IP addresses when relay mode is active &mdash; the UniFi gateway stops serving DHCP for that network.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Linux dhcrelay -->
+        <div class="accordion-item">
+            <h2 class="accordion-header"><button class="accordion-button collapsed small" type="button" data-bs-toggle="collapse" data-bs-target="#relay-linux">Linux (dhcrelay)</button></h2>
+            <div id="relay-linux" class="accordion-collapse collapse" data-bs-parent="#relay-accordion">
+                <div class="accordion-body">
+                    <pre class="bg-body-secondary rounded p-3 mb-2 small font-monospace overflow-auto"><code># ISC DHCP relay agent — listens on eth1, forwards to duh
+dhcrelay -i eth1 {{.ServerIP}}</code></pre>
+                    <p class="small text-body-secondary mb-0">Run on a Linux router/gateway that bridges the remote subnet. Install with <code class="bg-body-secondary px-1 rounded">apt install isc-dhcp-relay</code> or equivalent.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Windows Server -->
+        <div class="accordion-item">
+            <h2 class="accordion-header"><button class="accordion-button collapsed small" type="button" data-bs-toggle="collapse" data-bs-target="#relay-windows">Windows Server DHCP (PowerShell)</button></h2>
+            <div id="relay-windows" class="accordion-collapse collapse" data-bs-parent="#relay-accordion">
+                <div class="accordion-body">
+                    <pre class="bg-body-secondary rounded p-3 mb-2 small font-monospace overflow-auto"><code># Add DHCP relay agent via RRAS (Routing and Remote Access)
+Install-WindowsFeature RSAT-RemoteAccess
+netsh routing ip relay add dhcpserver {{.ServerIP}}
+netsh routing ip relay add interface "Ethernet"</code></pre>
+                    <p class="small text-body-secondary mb-0">Or configure the DHCP Relay Agent role through Server Manager &rarr; Routing and Remote Access.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+
+<!-- Section 5: DHCP Test -->
+<div class="card mb-4">
+    <div class="card-body">
+    <h2 class="h6 fw-semibold mb-2">Test DHCP</h2>
+    <p class="small text-body-secondary mb-3">Send a DHCP Discover packet to verify your network returns PXE boot options.</p>
+
+    <button hx-post="/dhcp/test" hx-target="#dhcp-test-result" hx-swap="innerHTML" hx-indicator="#dhcp-spinner"
+        class="btn btn-primary btn-sm d-inline-flex align-items-center gap-2">
+        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        Send DHCP Discover
+        <svg id="dhcp-spinner" class="htmx-indicator icon-sm" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+    </button>
+
+    <div id="dhcp-test-result" class="mt-3"></div>
+    </div>
+</div>
+
+</div><!-- /network-panel -->
+</div><!-- /tab-content -->
+
+{{template "foot"}}
+{{end}}
+
+{{define "dhcp_test_result"}}
+{{if .Success}}
+<div class="card {{if .HasBootOptions}}border-success{{else}}border-warning{{end}}">
+    <!-- Status banner -->
+    <div class="card-header {{if .HasBootOptions}}bg-success-subtle{{else}}bg-warning-subtle{{end}}">
+        <div class="d-flex align-items-center gap-2">
+            {{if .HasBootOptions}}
+            <svg class="icon-sm text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="small fw-medium text-success">Boot options detected</span>
+            {{else}}
+            <svg class="icon-sm text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+            <span class="small fw-medium text-warning">No boot options found</span>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- Results table -->
+    <div class="table-responsive">
+    <table class="table align-middle mb-0">
+        <tbody>
+            <tr>
+                <td class="px-3 py-2 small fw-semibold text-body-secondary text-uppercase" style="width:12rem">DHCP Server</td>
+                <td class="px-3 py-2 small font-monospace text-body">{{.ServerIP}}</td>
+            </tr>
+            <tr>
+                <td class="px-3 py-2 small fw-semibold text-body-secondary text-uppercase" style="width:12rem">Offered IP</td>
+                <td class="px-3 py-2 small font-monospace text-body">{{.OfferedIP}}</td>
+            </tr>
+            <tr>
+                <td class="px-3 py-2 small fw-semibold text-body-secondary text-uppercase" style="width:12rem">Next Server (siaddr)</td>
+                <td class="px-3 py-2 small font-monospace text-body">{{.NextServer}}</td>
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    {{if .Options}}
+    <div class="table-responsive border-top">
+    <table class="table align-middle mb-0">
+        <thead>
+            <tr>
+                <th class="text-uppercase text-body-secondary small fw-semibold" style="width:5rem">Option</th>
+                <th class="text-uppercase text-body-secondary small fw-semibold" style="width:12rem">Name</th>
+                <th class="text-uppercase text-body-secondary small fw-semibold">Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Options}}
+            <tr>
+                <td class="px-3 py-2 small font-monospace text-body-secondary">{{.Code}}</td>
+                <td class="px-3 py-2 small text-body">{{.Name}}</td>
+                <td class="px-3 py-2 small font-monospace text-body">{{.Value}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    </div>
+    {{end}}
+</div>
+{{else}}
+<div class="card border-danger">
+    <div class="card-header bg-danger-subtle">
+        <div class="d-flex align-items-center gap-2">
+            <svg class="icon-sm text-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="small fw-medium text-danger">DHCP Test Failed</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <pre class="small font-monospace text-body mb-0" style="white-space:pre-wrap">{{.Error}}</pre>
+    </div>
+</div>
+{{end}}
+{{end}}
+
+{{define "confirm_global"}}
+<div id="confirm-global" class="card mb-4">
+    <div class="card-body d-flex align-items-center justify-content-between py-3">
+        <div>
+            <span class="small fw-medium text-body">Confirm before reimage</span>
+            <span class="small text-body-secondary ms-2">Require confirmation prompt before provisioning</span>
+        </div>
+        <div class="btn-group btn-group-sm">
+            <button class="btn {{if .ConfirmGlobal}}btn-success{{else}}btn-outline-secondary{{end}}"
+                hx-put="/settings/confirm-reimage"
+                hx-vals='{"value":"true"}'
+                hx-target="#confirm-global"
+                hx-swap="outerHTML">On</button>
+            <button class="btn {{if not .ConfirmGlobal}}btn-warning{{else}}btn-outline-secondary{{end}}"
+                hx-put="/settings/confirm-reimage"
+                hx-vals='{"value":"false"}'
+                hx-target="#confirm-global"
+                hx-swap="outerHTML">Off</button>
+        </div>
+    </div>
+</div>
+{{end}}

@@ -1,0 +1,11 @@
+{{define "profile_row"}}
+{{with .Profile}}
+<tr id="profile-{{.ID}}" onclick="window.location='/profiles/{{.ID}}'" style="cursor:pointer">
+    <td class="px-3 py-2">
+        <div class="text-body small">{{.Name}}{{if .CatalogID}} <span class="badge rounded-pill text-bg-info align-middle" style="font-size:.65rem">Catalog</span>{{end}}{{if .OverlayFile}} <span class="badge rounded-pill text-bg-secondary align-middle" style="font-size:.65rem">Overlay</span>{{end}}</div>
+        {{if .Description}}<div class="text-body-secondary small">{{.Description}}</div>{{end}}
+    </td>
+    <td class="px-3 py-2"><span class="badge rounded-pill text-bg-secondary text-uppercase">{{.OSFamily}}</span></td>
+</tr>
+{{end}}
+{{end}}

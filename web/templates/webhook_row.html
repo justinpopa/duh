@@ -1,0 +1,41 @@
+{{define "webhook_row"}}
+{{with .Webhook}}
+<div id="webhook-{{.ID}}" class="card">
+    <div class="card-body py-3 d-flex align-items-start justify-content-between gap-3">
+        <div class="min-w-0 flex-grow-1">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="small font-monospace text-body text-truncate">{{.URL}}</span>
+                {{if .Enabled}}
+                <span class="badge rounded-pill text-bg-success">Enabled</span>
+                {{else}}
+                <span class="badge rounded-pill text-bg-secondary">Disabled</span>
+                {{end}}
+            </div>
+            <div class="small text-body-secondary">
+                Events: <span class="font-monospace">{{.Events}}</span>
+                {{if .Secret}}<span class="ms-2 text-success">signed</span>{{end}}
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-1 flex-shrink-0">
+            <button class="btn btn-sm btn-outline-secondary"
+                hx-post="/webhooks/{{.ID}}/test"
+                hx-swap="innerHTML"
+                hx-target="this"
+                hx-disabled-elt="this"
+                hx-on::after-request="var b=this;setTimeout(function(){b.textContent='Test'},1500)">Test</button>
+            <button class="btn btn-sm btn-outline-secondary"
+                hx-put="/webhooks/{{.ID}}/toggle"
+                hx-target="#webhook-{{.ID}}"
+                hx-swap="outerHTML"
+                hx-disabled-elt="this">{{if .Enabled}}Disable{{else}}Enable{{end}}</button>
+            <button class="btn btn-sm btn-outline-danger"
+                hx-delete="/webhooks/{{.ID}}"
+                hx-target="#webhook-{{.ID}}"
+                hx-swap="delete"
+                hx-confirm="Delete this webhook?"
+                hx-disabled-elt="this">Delete</button>
+        </div>
+    </div>
+</div>
+{{end}}
+{{end}}

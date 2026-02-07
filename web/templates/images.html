@@ -1,0 +1,338 @@
+{{define "images"}}
+{{template "head"}}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="page-title mb-0">Images</h1>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#upload-image-modal">New Image</button>
+</div>
+
+<div class="card mb-4 overflow-hidden">
+    <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 last-row-borderless">
+        <thead>
+            <tr>
+                <th class="text-uppercase text-body-secondary small fw-semibold">Name</th>
+                <th class="text-uppercase text-body-secondary small fw-semibold">Type</th>
+                <th class="text-uppercase text-body-secondary small fw-semibold" style="width:120px">Status</th>
+            </tr>
+        </thead>
+        <tbody id="images-body">
+            {{if .Images}}
+            {{range .Images}}
+            {{template "image_row" (dict "Image" .)}}
+            {{end}}
+            {{else}}
+            <tr id="images-empty">
+                <td colspan="3" class="px-3 py-4 text-center text-body-secondary small">
+                    No images yet{{if .CatalogEntries}} — pull one from the catalog below or upload your own{{else}} — upload an image to get started{{end}}
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    </div>
+</div>
+<script>
+document.getElementById('images-body').addEventListener('htmx:afterSwap', function() {
+    var empty = document.getElementById('images-empty');
+    if (empty) empty.remove();
+});
+</script>
+
+{{if .CatalogEntries}}
+<h2 class="h5 fw-semibold mb-3">Catalog</h2>
+{{if .CatalogFetchErr}}
+<div class="alert alert-danger mb-4" role="alert">
+    <span class="small">Failed to load catalog: {{.CatalogFetchErr}}</span>
+</div>
+{{end}}
+<div class="card mb-4 overflow-hidden">
+    <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 last-row-borderless">
+        <thead>
+            <tr>
+                <th class="text-uppercase text-body-secondary small fw-semibold">Name</th>
+                <th class="text-uppercase text-body-secondary small fw-semibold">Type</th>
+                <th class="text-uppercase text-body-secondary small fw-semibold">Arch</th>
+                <th class="text-uppercase text-body-secondary small fw-semibold">Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{$pulled := .CatalogPulled}}
+            {{range .CatalogEntries}}
+            {{$img := index $pulled .ID}}
+            {{if $img}}
+            <tr id="catalog-{{.ID}}" class="opacity-50">
+            {{else}}
+            <tr id="catalog-{{.ID}}" hx-post="/catalog/pull" hx-vals='{"catalog_id":"{{.ID}}"}' hx-target="#images-body" hx-swap="afterbegin"
+                hx-on::before-request="this.classList.add('opacity-50');this.style.pointerEvents='none';this.style.cursor='default'"
+                hx-on::after-request="if(!event.detail.successful){this.classList.remove('opacity-50');this.style.pointerEvents='';this.style.cursor='pointer'}"
+                style="cursor:pointer">
+            {{end}}
+                <td class="px-3 py-2 small text-body">
+                    <span class="d-inline-flex align-items-center gap-2">
+                        {{if .Icon}}<svg class="icon-md flex-shrink-0" viewBox="0 0 24 24" fill="{{.IconColor}}"><path d="{{.Icon}}"/></svg>{{end}}
+                        {{.Name}}
+                        {{if $img}}<svg class="icon-xs text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>{{end}}
+                    </span>
+                </td>
+                <td class="px-3 py-2"><span class="badge rounded-pill text-bg-secondary text-uppercase">{{.BootType}}</span></td>
+                <td class="px-3 py-2"><span class="badge rounded-pill text-bg-secondary text-uppercase">{{.Arch}}</span></td>
+                <td class="px-3 py-2 small text-body">{{.Description}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    </div>
+</div>
+{{else if .CatalogFetchErr}}
+<h2 class="h5 fw-semibold mb-3">Catalog</h2>
+<div class="alert alert-danger mb-4" role="alert">
+    <span class="small">Failed to load catalog: {{.CatalogFetchErr}}</span>
+</div>
+{{end}}
+
+<!-- New Image Modal -->
+<div id="upload-image-modal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New Image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form hx-post="/images/upload" hx-target="#images-body" hx-swap="afterbegin" hx-encoding="multipart/form-data"
+                hx-on::after-request="if(event.detail.successful){this.reset();document.getElementById('file-label').textContent='Choose files...';toggleBootFields();bootstrap.Modal.getInstance(document.getElementById('upload-image-modal')).hide()}">
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Name</label>
+                    <input type="text" name="name" placeholder="e.g. Ubuntu 24.04" required class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Description</label>
+                    <input type="text" name="description" placeholder="Optional description" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Boot Type</label>
+                    <select name="boot_type" id="boot-type-select" onchange="toggleBootFields()" class="form-select">
+                        <option value="linux">Linux (kernel + initrd)</option>
+                        <option value="wimboot">Windows (wimboot + WIM)</option>
+                        <option value="esxi">VMware ESXi (mboot.efi)</option>
+                        <option value="iso">ISO (via memdisk)</option>
+                        <option value="custom">Custom iPXE script</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Files</label>
+                    <div class="d-flex align-items-center gap-3">
+                        <label class="btn btn-outline-secondary btn-sm">
+                            <span id="file-label">Choose files...</span>
+                            <input type="file" name="files" multiple required class="d-none" onchange="updateFileLabel(this)">
+                        </label>
+                    </div>
+                    <span class="form-text" id="file-hint">Upload vmlinuz + initrd</span>
+                </div>
+                <div class="mb-3" id="cmdline-group">
+                    <label class="form-label fw-semibold small">Kernel cmdline</label>
+                    <input type="text" name="cmdline" placeholder="e.g. ip=dhcp inst.repo=..." class="form-control font-monospace">
+                </div>
+                <div class="mb-3" id="ipxe-script-group" style="display:none">
+                    <label class="form-label fw-semibold small">iPXE Script</label>
+                    <textarea name="ipxe_script" rows="8" placeholder="#!ipxe&#10;kernel &#123;&#123;.ServerURL&#125;&#125;/images/&#123;&#123;.ImageID&#125;&#125;/file/mykernel&#10;initrd &#123;&#123;.ServerURL&#125;&#125;/images/&#123;&#123;.ImageID&#125;&#125;/file/myinitrd&#10;boot"
+                        class="form-control font-monospace"></textarea>
+                    <span class="form-text">Template vars: {{"{{"}}.ServerURL{{"}}"}}, {{"{{"}}.ImageID{{"}}"}}, {{"{{"}}.Cmdline{{"}}"}}, {{"{{"}}.MAC{{"}}"}}, {{"{{"}}.Hostname{{"}}"}}</span>
+                </div>
+                <div id="upload-progress" class="d-none">
+                    <div class="progress" style="height:6px">
+                        <div id="upload-progress-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button data-bs-dismiss="modal" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateFileLabel(input) {
+    var label = document.getElementById('file-label');
+    if (input.files.length === 0) {
+        label.textContent = 'Choose files...';
+    } else if (input.files.length === 1) {
+        label.textContent = input.files[0].name;
+    } else {
+        label.textContent = input.files.length + ' files selected';
+    }
+}
+(function() {
+    var form = document.querySelector('[hx-post="/images/upload"]');
+    var progress = document.getElementById('upload-progress');
+    var bar = document.getElementById('upload-progress-bar');
+    form.addEventListener('htmx:xhr:progress', function(e) {
+        if (e.detail.lengthComputable) {
+            bar.style.width = Math.round((e.detail.loaded / e.detail.total) * 100) + '%';
+        }
+    });
+    form.addEventListener('htmx:beforeRequest', function() {
+        bar.style.width = '0%';
+        progress.classList.remove('d-none');
+    });
+    form.addEventListener('htmx:afterRequest', function() {
+        progress.classList.add('d-none');
+        bar.style.width = '0%';
+    });
+})();
+function toggleBootFields() {
+    var bt = document.getElementById('boot-type-select').value;
+    var hint = document.getElementById('file-hint');
+    var cmdGroup = document.getElementById('cmdline-group');
+    var scriptGroup = document.getElementById('ipxe-script-group');
+    if (bt === 'linux') {
+        hint.textContent = 'Upload vmlinuz + initrd';
+        cmdGroup.style.display = '';
+        scriptGroup.style.display = 'none';
+    } else if (bt === 'wimboot') {
+        hint.textContent = 'Upload wimboot, BCD, boot.sdi, boot.wim';
+        cmdGroup.style.display = 'none';
+        scriptGroup.style.display = 'none';
+    } else if (bt === 'esxi') {
+        hint.textContent = 'Upload mboot.efi + boot.cfg + ESXi modules';
+        cmdGroup.style.display = '';
+        scriptGroup.style.display = 'none';
+    } else if (bt === 'iso') {
+        hint.textContent = 'Upload memdisk + boot.iso';
+        cmdGroup.style.display = 'none';
+        scriptGroup.style.display = 'none';
+    } else {
+        hint.textContent = 'Upload any files referenced by your script';
+        cmdGroup.style.display = '';
+        scriptGroup.style.display = '';
+    }
+}
+</script>
+
+<!-- Edit Image Modal -->
+<div id="image-edit-modal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Name</label>
+                    <input type="text" id="image-edit-name" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Description</label>
+                    <input type="text" id="image-edit-description" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Boot Type</label>
+                    <select id="image-edit-boot-type" class="form-select">
+                        <option value="linux">Linux (kernel + initrd)</option>
+                        <option value="wimboot">Windows (wimboot + WIM)</option>
+                        <option value="esxi">VMware ESXi (mboot.efi)</option>
+                        <option value="iso">ISO (via memdisk)</option>
+                        <option value="custom">Custom iPXE script</option>
+                    </select>
+                </div>
+                <div id="image-edit-cmdline-group" class="mb-3">
+                    <label class="form-label fw-semibold small">Kernel cmdline</label>
+                    <input type="text" id="image-edit-cmdline" class="form-control font-monospace">
+                </div>
+                <div id="image-edit-ipxe-group" class="mb-3" style="display:none">
+                    <label class="form-label fw-semibold small">iPXE Script</label>
+                    <textarea id="image-edit-ipxe-script" rows="6" class="form-control font-monospace"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <button onclick="deleteImage()" class="btn btn-outline-danger btn-sm">Delete Image</button>
+                <div class="d-flex gap-2">
+                    <button data-bs-dismiss="modal" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                    <button onclick="saveImage()" class="btn btn-primary btn-sm">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function onImageRowClick(e, tr) {
+    if (e.target.closest('button, select, input, a, .btn-group')) return;
+    openImageEditModal(JSON.parse(tr.dataset.image));
+}
+var editImageId = null;
+var imageEditModalInstance = null;
+function getImageEditModal() {
+    if (!imageEditModalInstance) imageEditModalInstance = new bootstrap.Modal(document.getElementById('image-edit-modal'));
+    return imageEditModalInstance;
+}
+function openImageEditModal(img) {
+    editImageId = img.ID;
+    document.getElementById('image-edit-name').value = img.Name || '';
+    document.getElementById('image-edit-description').value = img.Description || '';
+    var btSelect = document.getElementById('image-edit-boot-type');
+    btSelect.value = img.BootType || 'linux';
+    document.getElementById('image-edit-cmdline').value = img.Cmdline || '';
+    document.getElementById('image-edit-ipxe-script').value = img.IPXEScript || '';
+    toggleImageEditFields();
+    btSelect.onchange = toggleImageEditFields;
+    getImageEditModal().show();
+}
+function closeImageEditModal() {
+    getImageEditModal().hide();
+    editImageId = null;
+}
+function toggleImageEditFields() {
+    var bt = document.getElementById('image-edit-boot-type').value;
+    var cmdGroup = document.getElementById('image-edit-cmdline-group');
+    var ipxeGroup = document.getElementById('image-edit-ipxe-group');
+    if (bt === 'custom') {
+        cmdGroup.style.display = '';
+        ipxeGroup.style.display = '';
+    } else if (bt === 'wimboot' || bt === 'iso') {
+        cmdGroup.style.display = 'none';
+        ipxeGroup.style.display = 'none';
+    } else {
+        cmdGroup.style.display = '';
+        ipxeGroup.style.display = 'none';
+    }
+}
+function saveImage() {
+    if (editImageId === null) return;
+    htmx.ajax('PUT', '/images/' + editImageId, {
+        values: {
+            name: document.getElementById('image-edit-name').value,
+            description: document.getElementById('image-edit-description').value,
+            boot_type: document.getElementById('image-edit-boot-type').value,
+            cmdline: document.getElementById('image-edit-cmdline').value,
+            ipxe_script: document.getElementById('image-edit-ipxe-script').value
+        },
+        target: '#image-' + editImageId,
+        swap: 'outerHTML'
+    }).then(function() {
+        closeImageEditModal();
+    }).catch(function() {
+        alert('Failed to save image.');
+    });
+}
+function deleteImage() {
+    if (editImageId === null) return;
+    if (!confirm('Delete this image?')) return;
+    htmx.ajax('DELETE', '/images/' + editImageId, {
+        target: '#image-' + editImageId,
+        swap: 'delete'
+    }).then(function() {
+        closeImageEditModal();
+    }).catch(function() {
+        alert('Failed to delete image.');
+    });
+}
+</script>
+
+{{template "foot"}}
+{{end}}

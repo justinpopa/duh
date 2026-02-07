@@ -1,0 +1,25 @@
+[Unit]
+Description=duh - Dogmatic Unattended Hydration
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/duh
+EnvironmentFile=-/etc/duh/duh.env
+Restart=on-failure
+RestartSec=5
+
+# Data directory
+StateDirectory=duh
+WorkingDirectory=/var/lib/duh
+
+# Hardening
+ProtectSystem=strict
+ReadWritePaths=/var/lib/duh
+ProtectHome=true
+NoNewPrivileges=false
+AmbientCapabilities=CAP_NET_RAW CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

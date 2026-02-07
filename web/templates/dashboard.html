@@ -1,0 +1,189 @@
+{{define "dashboard"}}
+{{template "head"}}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="page-title mb-0">Systems</h1>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#add-system-modal">New System</button>
+</div>
+
+<div class="card mb-4 overflow-hidden">
+    <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 last-row-borderless">
+        <thead>
+            <tr>
+                <th class="text-uppercase text-body-secondary small fw-semibold">System</th>
+                <th class="text-uppercase text-body-secondary small fw-semibold">Image</th>
+                <th class="text-uppercase text-body-secondary small fw-semibold">Profile</th>
+                <th class="text-uppercase text-body-secondary small fw-semibold">State</th>
+            </tr>
+        </thead>
+        <tbody id="systems-body">
+            {{$imageNames := .ImageNames}}
+            {{$profileNames := .ProfileNames}}
+            {{if .Systems}}
+            {{range .Systems}}
+            {{template "system_row" (dict "System" . "ImageNames" $imageNames "ProfileNames" $profileNames)}}
+            {{end}}
+            {{else}}
+            <tr id="systems-empty">
+                <td colspan="4" class="px-3 py-4 text-center text-body-secondary small">
+                    No systems yet — add one above or PXE boot a machine to auto-discover it
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    </div>
+</div>
+<script>
+document.getElementById('systems-body').addEventListener('htmx:afterSwap', function() {
+    var empty = document.getElementById('systems-empty');
+    if (empty) empty.remove();
+});
+</script>
+
+<!-- New System Modal -->
+<div id="add-system-modal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New System</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form hx-post="/systems" hx-target="#systems-body" hx-swap="afterbegin"
+                hx-on::after-request="if(event.detail.successful){this.reset();bootstrap.Modal.getInstance(document.getElementById('add-system-modal')).hide()}">
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">MAC Address</label>
+                    <input type="text" name="mac" placeholder="aa:bb:cc:dd:ee:ff" required class="form-control font-monospace">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Hostname</label>
+                    <input type="text" name="hostname" placeholder="e.g. node01" required class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button data-bs-dismiss="modal" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Add</button>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit System Modal -->
+<div id="edit-modal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit System</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold small">Hostname</label>
+                        <input type="text" id="edit-hostname" class="form-control">
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold small">MAC Address</label>
+                        <input type="text" id="edit-mac" class="form-control font-monospace">
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold small">Image</label>
+                        <select id="edit-image" class="form-select">
+                            <option value="0">-- none --</option>
+                            {{range .Images}}
+                            <option value="{{.ID}}">{{.Name}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold small">Profile</label>
+                        <select id="edit-profile" class="form-select">
+                            <option value="0">-- none --</option>
+                            {{range .Profiles}}
+                            <option value="{{.ID}}">{{.Name}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Variables</label>
+                    <textarea id="edit-vars" rows="6" class="form-control font-monospace"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <button onclick="removeSystem()" class="btn btn-outline-danger btn-sm">Remove System</button>
+                <div class="d-flex gap-2">
+                    <button data-bs-dismiss="modal" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                    <button onclick="saveSystem()" class="btn btn-primary btn-sm">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function onSystemRowClick(e, tr) {
+    if (e.target.closest('button, a, .btn-group')) return;
+    openEditModal(JSON.parse(tr.dataset.system));
+}
+var editSystemId = null;
+var editModal = null;
+function getEditModal() {
+    if (!editModal) editModal = new bootstrap.Modal(document.getElementById('edit-modal'));
+    return editModal;
+}
+function openEditModal(sys) {
+    editSystemId = sys.ID;
+    document.getElementById('edit-hostname').value = sys.Hostname || '';
+    document.getElementById('edit-mac').value = sys.MAC || '';
+    document.getElementById('edit-image').value = sys.ImageID || 0;
+    document.getElementById('edit-profile').value = sys.ProfileID || 0;
+    var editor = document.getElementById('edit-vars');
+    try {
+        editor.value = JSON.stringify(JSON.parse(sys.Vars || '{}'), null, 2);
+    } catch(e) {
+        editor.value = sys.Vars || '{}';
+    }
+    getEditModal().show();
+}
+function closeEditModal() {
+    getEditModal().hide();
+    editSystemId = null;
+}
+function saveSystem() {
+    if (editSystemId === null) return;
+    htmx.ajax('PUT', '/systems/' + editSystemId, {
+        values: {
+            mac: document.getElementById('edit-mac').value,
+            hostname: document.getElementById('edit-hostname').value,
+            image_id: document.getElementById('edit-image').value,
+            profile_id: document.getElementById('edit-profile').value,
+            vars: document.getElementById('edit-vars').value
+        },
+        target: '#system-' + editSystemId,
+        swap: 'outerHTML'
+    }).then(function() {
+        closeEditModal();
+    }).catch(function() {
+        alert('Failed to save system.');
+    });
+}
+function removeSystem() {
+    if (editSystemId === null) return;
+    if (!confirm('Remove this system?')) return;
+    htmx.ajax('DELETE', '/systems/' + editSystemId, {
+        target: '#system-' + editSystemId,
+        swap: 'delete'
+    }).then(function() {
+        closeEditModal();
+    }).catch(function() {
+        alert('Failed to remove system.');
+    });
+}
+</script>
+{{template "foot"}}
+{{end}}

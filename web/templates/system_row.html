@@ -1,0 +1,75 @@
+{{define "system_row"}}
+{{with .System}}
+<tr id="system-{{.ID}}" data-system="{{jsonAttr .}}" onclick="onSystemRowClick(event, this)" style="cursor:pointer">
+    <td class="px-3 py-2">
+        <div class="text-body small">{{if .Hostname}}{{.Hostname}}{{else}}<span class="text-warning" title="Hostname required for provisioning">&#9888; No hostname</span>{{end}}</div>
+        <div class="text-body-secondary small font-monospace">{{.MAC}}{{if .IPAddr}} &middot; {{.IPAddr}}{{end}}</div>
+    </td>
+    <td class="px-3 py-2 small text-body text-truncate">
+        {{$imageNames := $.ImageNames}}
+        {{if .ImageID}}{{index $imageNames (deref .ImageID)}}{{else}}<span class="text-body-tertiary">&mdash;</span>{{end}}
+    </td>
+    <td class="px-3 py-2 small text-body text-truncate">
+        {{$profileNames := $.ProfileNames}}
+        {{if .ProfileID}}{{index $profileNames (deref .ProfileID)}}{{else}}<span class="text-body-tertiary">&mdash;</span>{{end}}
+    </td>
+    <td class="px-3 py-2">
+            {{if eq .State "discovered"}}
+                {{if and .Hostname (deref .ImageID)}}
+                <div class="btn-group btn-group-sm">
+                    <span class="btn btn-secondary disabled">Discovered</span>
+                    <button class="btn btn-outline-secondary"
+                        hx-put="/systems/{{.ID}}/state"
+                        hx-vals='{"action":"queue"}'
+                        hx-target="#system-{{.ID}}"
+                        hx-swap="outerHTML"
+                        hx-disabled-elt="this">Queue</button>
+                </div>
+                {{else}}
+                <span class="btn btn-sm btn-secondary disabled">Discovered</span>
+                {{end}}
+            {{else if eq .State "queued"}}
+                <div class="btn-group btn-group-sm">
+                    <span class="btn btn-warning disabled">Queued</span>
+                    <button class="btn btn-outline-secondary"
+                        hx-put="/systems/{{.ID}}/state"
+                        hx-vals='{"action":"cancel"}'
+                        hx-target="#system-{{.ID}}"
+                        hx-swap="outerHTML"
+                        hx-disabled-elt="this">Cancel</button>
+                </div>
+            {{else if eq .State "provisioning"}}
+                <div class="btn-group btn-group-sm">
+                    <span class="btn btn-info disabled">Provisioning{{if .StateChangedAt}} {{timeSince .StateChangedAt}}{{end}}</span>
+                    <button class="btn btn-outline-danger"
+                        hx-put="/systems/{{.ID}}/state"
+                        hx-vals='{"action":"mark_failed"}'
+                        hx-target="#system-{{.ID}}"
+                        hx-swap="outerHTML"
+                        hx-disabled-elt="this">Fail</button>
+                </div>
+            {{else if eq .State "ready"}}
+                <div class="btn-group btn-group-sm">
+                    <span class="btn btn-success disabled">Ready</span>
+                    <button class="btn btn-outline-secondary"
+                        hx-put="/systems/{{.ID}}/state"
+                        hx-vals='{"action":"reimage"}'
+                        hx-target="#system-{{.ID}}"
+                        hx-swap="outerHTML"
+                        hx-disabled-elt="this">Reimage</button>
+                </div>
+            {{else if eq .State "failed"}}
+                <div class="btn-group btn-group-sm">
+                    <span class="btn btn-danger disabled">Failed</span>
+                    <button class="btn btn-outline-secondary"
+                        hx-put="/systems/{{.ID}}/state"
+                        hx-vals='{"action":"retry"}'
+                        hx-target="#system-{{.ID}}"
+                        hx-swap="outerHTML"
+                        hx-disabled-elt="this">Retry</button>
+                </div>
+            {{end}}
+    </td>
+</tr>
+{{end}}
+{{end}}

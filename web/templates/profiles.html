@@ -1,0 +1,34 @@
+{{define "profiles"}}
+{{template "head" .}}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="page-title mb-0">Profiles</h1>
+    <a href="/profiles/new" class="btn btn-primary btn-sm">New Profile</a>
+</div>
+
+<div class="card mb-4 overflow-hidden">
+    <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 last-row-borderless">
+        <thead>
+            <tr>
+                <th class="text-uppercase text-body-secondary small fw-semibold">Profile</th>
+                <th class="text-uppercase text-body-secondary small fw-semibold">OS Family</th>
+            </tr>
+        </thead>
+        <tbody id="profiles-body">
+            {{if .Profiles}}
+            {{range .Profiles}}
+            {{template "profile_row" dict "Profile" .}}
+            {{end}}
+            {{else}}
+            <tr>
+                <td colspan="2" class="px-3 py-4 text-center text-body-secondary small">
+                    No profiles yet — create one to get started
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    </div>
+</div>
+{{template "foot" .}}
+{{end}}
