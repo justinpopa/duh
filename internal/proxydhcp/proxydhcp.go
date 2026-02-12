@@ -86,7 +86,9 @@ func (s *Server) handler(conn net.PacketConn, peer net.Addr, pkt *dhcpv4.DHCPv4)
 	var bootFile string
 	if isIPXE {
 		// iPXE is loaded - chain to our boot script
-		bootFile = fmt.Sprintf("%s/boot.ipxe?mac=${net0/mac}", serverURL)
+		// Use the actual MAC from the DHCP packet, not iPXE variable expansion,
+		// to handle systems with multiple NICs correctly
+		bootFile = fmt.Sprintf("%s/boot.ipxe?mac=%s", serverURL, pkt.ClientHWAddr)
 	} else if httpBoot {
 		// HTTP boot — serve iPXE binary as full URL
 		switch arch {
