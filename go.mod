@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/caddyserver/certmagic v0.25.1
-	github.com/insomniacslk/dhcp v0.0.0-20251020182700-175e84fbb167
+	github.com/insomniacslk/dhcp v0.0.0-20260719225207-c76316d4aa82
 	github.com/libdns/route53 v1.6.0
 	github.com/pin/tftp/v3 v3.1.0
 	golang.org/x/crypto v0.47.0
